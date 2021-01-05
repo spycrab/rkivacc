@@ -33,7 +33,7 @@ class RKIReport:
 
     def __init__(self, report_xlsx_path):
         workbook = openpyxl.load_workbook(filename = report_xlsx_path)
-        sheet = workbook.active
+        sheet = workbook.worksheets[rkivacc.WORKSHEET_INDEX]
         
         self._states = {}
         
