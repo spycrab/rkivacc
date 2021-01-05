@@ -1,6 +1,6 @@
 # rkivacc
 
-Automatically downloads the latest Vaccination Data for Germany from the Robert Koch Institut.
+Downloads and parses the latest Vaccination Data for Germany from the Robert Koch Institut.
 
 **This library is not made by, endorsed by or in any way related to the RKI.**
 
@@ -10,7 +10,9 @@ See [example.py](example.py).
 
 ## Requirements
 
-Needs requests and openpyxl.
+* At least Python3
+* request
+* openpyxl
 
 ## License
 

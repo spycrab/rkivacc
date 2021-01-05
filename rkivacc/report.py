@@ -2,6 +2,7 @@ import rkivacc
 
 import os
 import tempfile
+import email.utils
 
 import requests
 import openpyxl
@@ -31,11 +32,12 @@ class RKIReport:
         return data
         
 
-    def __init__(self, report_xlsx_path):
+    def __init__(self, report_xlsx_path, modified = None):
         workbook = openpyxl.load_workbook(filename = report_xlsx_path)
         sheet = workbook.worksheets[rkivacc.WORKSHEET_INDEX]
         
         self._states = {}
+        self._modified = modified
         
         table_rows = sheet.iter_rows(min_row=rkivacc.TABLE_FIRST_ROW, 
                                      max_row=rkivacc.TABLE_FIRST_ROW + rkivacc.TABLE_LENGTH - 1,
@@ -60,7 +62,9 @@ class RKIReport:
     
     def total(self):
         return self._total
-       
+
+    def modified(self):
+        return self._modified
            
     def download(target_path):
         try:
@@ -73,12 +77,12 @@ class RKIReport:
         
         with open(target_path, "wb") as file:
             file.write(response.content)
-                
+        return email.utils.parsedate_to_datetime(response.headers['Last-Modified'])
 
     def obtain():
         temp_dir = tempfile.TemporaryDirectory()
         temp_file = os.path.join(temp_dir.name, "rkiReport.xlsx")
-        RKIReport.download(temp_file)
-        report = RKIReport(temp_file)
+        last_modified = RKIReport.download(temp_file)
+        report = RKIReport(temp_file, last_modified)
         temp_dir.cleanup()
         return report

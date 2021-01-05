@@ -2,7 +2,8 @@ import rkivacc
 
 if __name__ == "__main__":
     report = rkivacc.RKIReport.obtain()
-    
+
+    print("Report from {}".format(report.modified()))
     print("Available states: {}".format(report.states()))
     print("Berlin: {}".format(report.state("Berlin")))
     
