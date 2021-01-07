@@ -9,24 +9,22 @@ import openpyxl
 
 class RKIReport:
 
-    def extract_row(row, state = True):
-        
+    def extract_row(row, map, state = True):
         data = {}
         
         if state:
-            data["state"] = row[0].value
+            data["state"] = row[map["state"]].value
         
         data.update({
-                "vaccinations": row[1].value,
-                "delta": row[2].value,
-                "vaccinations_per_capita": row[3].value,
+                "vaccinations": row[map["vaccinations"]].value,
+                "delta": row[map["delta"]].value,
+                "vaccinations_per_capita": row[map["vaccinations_per_capita"]].value,
                 "reasons": {
-                    "age": row[4].value,
-                    "profession": row[5].value,
-                    "medical": row[6].value,
-                    "nursing_home": row[7].value
-                },
-                "hint": row[8].value
+                    "age": row[map["reasons_age"]].value,
+                    "profession": row[map["reasons_profession"]].value,
+                    "medical": row[map["reasons_medical"]].value,
+                    "nursing_home": row[map["reasons_nursing_home"]].value
+                }
         })
                     
         return data
@@ -39,17 +37,52 @@ class RKIReport:
         self._states = {}
         self._modified = modified
         
-        table_rows = sheet.iter_rows(min_row=rkivacc.TABLE_FIRST_ROW, 
+        table_rows = sheet.iter_rows(min_row=rkivacc.TABLE_FIRST_ROW - 1, 
                                      max_row=rkivacc.TABLE_FIRST_ROW + rkivacc.TABLE_LENGTH - 1,
-                                     max_col=9)
+                                     max_col=10)
+                                     
+        header_row = next(table_rows)
+        
+        known_rows = {
+            "RS": None,
+            "Bundesland": "state",
+            "Impfungen kumulativ": "vaccinations",
+            "Differenz zum Vortag": "delta",    
+            "Impfungen pro 1.000 Einwohner": "vaccinations_per_capita",
+            # RKI couldn't decide between versions with and without an asterisk
+            "Indikation nach Alter": "reasons_age",
+            "Berufliche Indikation": "reasons_profession",
+            "Medizinische Indikation": "reasons_medical",
+            "Pflegeheim-bewohnerIn": "reasons_nursing_home",
+            "Indikation nach Alter*": "reasons_age",
+            "Berufliche Indikation*": "reasons_profession",
+            "Medizinische Indikation*": "reasons_medical",
+            "Pflegeheim-bewohnerIn*": "reasons_nursing_home"
+        }
+
+        map = {}
+
+        for cellIndex in range(0, len(header_row)):
+            value = header_row[cellIndex].value
+            if value is None:
+                continue
+            if not value in known_rows:
+                print("Warning: Found unknown header item '{}'. This might be bad news.".format(value))
+                continue
+            key = known_rows[value]
+            if key is None:
+                continue
+            map[key] = cellIndex
+            
+                                     
         total_row = next(sheet.iter_rows(min_row=rkivacc.TABLE_FIRST_ROW + rkivacc.TABLE_LENGTH,
                                          max_row=rkivacc.TABLE_FIRST_ROW + rkivacc.TABLE_LENGTH,
-                                         max_col=9))
+                                         max_col=10))
         
         for row in table_rows:
-            self._states[row[0].value] = RKIReport.extract_row(row)  
+            self._states[row[map["state"]].value] = RKIReport.extract_row(row, map)  
 
-        self._total = RKIReport.extract_row(total_row, state = False)
+        self._total = RKIReport.extract_row(total_row, map, state = False)
     
     def states(self):
         return list(self._states.keys())
