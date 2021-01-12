@@ -1,7 +1,13 @@
+import sys
+
 import rkivacc
 
 if __name__ == "__main__":
-    report = rkivacc.RKIReport.obtain()
+    report = None
+    if len(sys.argv) == 2:
+        report = rkivacc.RKIReport(sys.argv[1])
+    else:
+        report = rkivacc.RKIReport.obtain()
 
     print("Report from {}".format(report.modified()))
     print("Available states: {}".format(report.states()))
