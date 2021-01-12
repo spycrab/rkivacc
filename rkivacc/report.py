@@ -9,26 +9,39 @@ import openpyxl
 
 class RKIReport:
 
-    def extract_row(row, map, state = True):
+    def __get_column(row, map, column):
+        if not column in map:
+            return None
+        value = row[map[column]].value
+        if isinstance(value, str):
+            return RKIReport.__strip_stars(value)
+        else:
+            return value
+
+    def __extract_row(row, map, state = True):
         data = {}
         
         if state:
-            data["state"] = row[map["state"]].value
+            data["state"] = RKIReport.__get_column(row, map, "state")
         
         data.update({
-                "vaccinations": row[map["vaccinations"]].value,
-                "delta": row[map["delta"]].value,
-                "vaccinations_per_capita": row[map["vaccinations_per_capita"]].value,
+                "vaccinations": RKIReport.__get_column(row, map, "vaccinations"),
+                "delta": RKIReport.__get_column(row, map, "delta"),
+                "vaccinations_per_capita": RKIReport.__get_column(row, map, "vaccinations_per_capita"),
                 "reasons": {
-                    "age": row[map["reasons_age"]].value,
-                    "profession": row[map["reasons_profession"]].value,
-                    "medical": row[map["reasons_medical"]].value,
-                    "nursing_home": row[map["reasons_nursing_home"]].value
+                    "age": RKIReport.__get_column(row, map, "reasons_age"),
+                    "profession": RKIReport.__get_column(row, map, "reasons_profession"),
+                    "medical": RKIReport.__get_column(row, map, "reasons_medical"),
+                    "nursing_home": RKIReport.__get_column(row, map, "reasons_nursing_home")
                 }
         })
                     
         return data
-        
+
+    def __strip_stars(str):
+        while str[-1] == "*":
+            str = str[0:-1]
+        return str
 
     def __init__(self, report_xlsx_path, modified = None):
         workbook = openpyxl.load_workbook(filename = report_xlsx_path, data_only = True)
@@ -49,15 +62,10 @@ class RKIReport:
             "Impfungen kumulativ": "vaccinations",
             "Differenz zum Vortag": "delta",    
             "Impfungen pro 1.000 Einwohner": "vaccinations_per_capita",
-            # RKI couldn't decide between versions with and without an asterisk
             "Indikation nach Alter": "reasons_age",
             "Berufliche Indikation": "reasons_profession",
             "Medizinische Indikation": "reasons_medical",
             "Pflegeheim-bewohnerIn": "reasons_nursing_home",
-            "Indikation nach Alter*": "reasons_age",
-            "Berufliche Indikation*": "reasons_profession",
-            "Medizinische Indikation*": "reasons_medical",
-            "Pflegeheim-bewohnerIn*": "reasons_nursing_home"
         }
 
         map = {}
@@ -66,6 +74,7 @@ class RKIReport:
             value = header_row[cellIndex].value
             if value is None:
                 continue
+            value = RKIReport.__strip_stars(value)
             if not value in known_rows:
                 print("Warning: Found unknown header item '{}'. This might be bad news.".format(value))
                 continue
@@ -80,9 +89,9 @@ class RKIReport:
                                          max_col=10))
         
         for row in table_rows:
-            self._states[row[map["state"]].value] = RKIReport.extract_row(row, map)  
+            self._states[row[map["state"]].value] = RKIReport.__extract_row(row, map)
 
-        self._total = RKIReport.extract_row(total_row, map, state = False)
+        self._total = RKIReport.__extract_row(total_row, map, state = False)
     
     def states(self):
         return list(self._states.keys())
