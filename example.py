@@ -9,6 +9,10 @@ if __name__ == "__main__":
     else:
         report = rkivacc.RKIReport.obtain()
 
+    if not report.has_per_capita():
+        print("Calculating data")
+        report.calculate_per_capita()
+
     print("Report from {}".format(report.modified()))
     print("Available states: {}".format(report.states()))
     print("Berlin: {}".format(report.state("Berlin")))

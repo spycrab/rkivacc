@@ -89,7 +89,7 @@ class RKIReport:
                                          max_col=10))
         
         for row in table_rows:
-            self._states[row[map["state"]].value] = RKIReport.__extract_row(row, map)
+            self._states[RKIReport.__strip_stars(row[map["state"]].value)] = RKIReport.__extract_row(row, map)
 
         self._total = RKIReport.__extract_row(total_row, map, state = False)
     
@@ -107,6 +107,19 @@ class RKIReport:
 
     def modified(self):
         return self._modified
+
+    def has_per_capita(self):
+        return (self._total["vaccinations_per_capita"] is not None)
+
+    def calculate_per_capita(self):
+        if self.has_per_capita():
+            print("Per capita data already present! Not overwriting.")
+            return
+        for state in self.states():
+            if not state in rkivacc.POPULATION_STATS:
+                raise RuntimeError("State '{}' not in population stats!".format(state))
+            self._states[state]["vaccinations_per_capita"] = (self._states[state]["vaccinations"] / rkivacc.POPULATION_STATS[state]) * 1000
+        self._total["vaccinations_per_capita"] = (self._total["vaccinations"] / rkivacc.POPULATION_STATS["total"]) * 1000
            
     def download(target_path):
         try:
